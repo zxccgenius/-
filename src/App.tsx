@@ -100,12 +100,12 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col selection:bg-bali-gold selection:text-white">
       {/* Navigation */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isScrolled ? 'bg-bali-sand/90 backdrop-blur-2xl py-4 border-b border-bali-ink/5' : 'bg-transparent py-10'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isScrolled ? 'bg-bali-sand/90 backdrop-blur-2xl py-4 border-b border-bali-ink/5 text-bali-ink' : 'bg-transparent py-10 text-white'}`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-6 group cursor-pointer">
             <div className="relative w-14 h-14 flex items-center justify-center">
-              <div className="absolute inset-0 border border-bali-ink/10 rounded-full group-hover:scale-110 group-hover:border-bali-gold transition-all duration-700" />
-              <div className="absolute inset-2 border border-bali-ink/5 rounded-full group-hover:rotate-180 transition-all duration-1000" />
+              <div className={`absolute inset-0 border rounded-full group-hover:scale-110 group-hover:border-bali-gold transition-all duration-700 ${isScrolled ? 'border-bali-ink/10' : 'border-white/20'}`} />
+              <div className={`absolute inset-2 border rounded-full group-hover:rotate-180 transition-all duration-1000 ${isScrolled ? 'border-bali-ink/5' : 'border-white/10'}`} />
               <span className="font-serif text-2xl font-bold relative z-10">B</span>
             </div>
             <div className="flex flex-col">
@@ -123,14 +123,14 @@ export default function App() {
           </nav>
           <div className="flex items-center gap-8">
             <div className="hidden xl:flex flex-col items-end">
-              <span className="text-[9px] uppercase tracking-[0.2em] opacity-40 font-bold mb-1">Showroom</span>
+              <span className="text-[9px] uppercase tracking-[0.2em] opacity-40 font-bold mb-1">Шоу-рум</span>
               <span className="text-sm font-serif font-bold tracking-tight">Екатеринбург</span>
             </div>
-            <Button variant="ghost" size="icon" className="relative hover:bg-bali-gold/10 rounded-full w-14 h-14 transition-all duration-500">
+            <Button variant="ghost" size="icon" className={`relative hover:bg-bali-gold/10 rounded-full w-14 h-14 transition-all duration-500 ${isScrolled ? 'text-bali-ink' : 'text-white'}`}>
               <ShoppingBag className="w-5 h-5" />
               <span className="absolute top-3 right-3 bg-bali-gold text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-lg">0</span>
             </Button>
-            <button className="lg:hidden p-3 hover:bg-bali-gold/10 rounded-full transition-all duration-500" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <button className={`lg:hidden p-3 hover:bg-bali-gold/10 rounded-full transition-all duration-500 ${isScrolled ? 'text-bali-ink' : 'text-white'}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
