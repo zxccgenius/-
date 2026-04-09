@@ -14,7 +14,10 @@ import {
   Facebook,
   ArrowRight,
   ArrowDown,
-  Play
+  Play,
+  Coffee,
+  Hotel,
+  Palmtree
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,15 +77,53 @@ const FEATURED_PRODUCTS = [
 export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
   const heroRef = useRef(null);
   
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
+  useEffect(() => {
+    const moveCursor = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', moveCursor);
+    return () => window.removeEventListener('mousemove', moveCursor);
+  }, []);
+
+  const { scrollYProgress: pageScrollProgress } = useScroll();
+  
+  const heroContainerRef = useRef(null);
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroContainerRef,
     offset: ["start start", "end start"]
   });
 
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  // Apple-style mask reveal: image starts as a box and expands to full screen
+  const maskScale = useTransform(heroScrollProgress, [0, 0.5], [0.8, 1]);
+  const maskRadius = useTransform(heroScrollProgress, [0, 0.5], ["40px", "0px"]);
+  const heroTextOpacity = useTransform(heroScrollProgress, [0, 0.2], [1, 0]);
+  const heroTextY = useTransform(heroScrollProgress, [0, 0.2], [0, -50]);
+
+  // Animation variants
+  const fluidVariants = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: 'blur(0px)',
+      transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } 
+    },
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -93,11 +134,44 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-bali-gold selection:text-white">
+    <div className="min-h-screen flex flex-col selection:bg-bali-gold selection:text-white overflow-x-hidden noise-bg">
+      {/* Noise Overlay */}
+      <div className="noise-overlay" />
+
+      {/* Custom Cursor */}
+      <div className="hidden lg:block">
+        <motion.div 
+          className="custom-cursor"
+          animate={{ 
+            x: cursorPos.x - 16, 
+            y: cursorPos.y - 16,
+            scale: isHovering ? 2 : 1,
+            backgroundColor: isHovering ? "rgba(184, 146, 80, 0.1)" : "transparent"
+          }}
+          transition={{ type: "spring", damping: 30, stiffness: 200, mass: 0.5 }}
+        />
+        <motion.div 
+          className="custom-cursor-dot"
+          animate={{ x: cursorPos.x - 2, y: cursorPos.y - 2 }}
+          transition={{ type: "spring", damping: 40, stiffness: 400, mass: 0.1 }}
+        />
+      </div>
+
+      {/* Scroll Progress */}
+      <motion.div 
+        className="fixed top-0 left-0 right-0 h-1 bg-bali-gold z-[60] origin-left"
+        style={{ scaleX: pageScrollProgress }}
+      />
+
       {/* Navigation */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isScrolled ? 'bg-bali-sand/90 backdrop-blur-2xl py-4 border-b border-bali-ink/5 text-bali-ink' : 'bg-transparent py-10 text-white'}`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-6 group cursor-pointer">
+          <motion.div 
+            className="flex items-center gap-6 group cursor-pointer"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            whileHover={{ x: 5 }}
+          >
             <div className="relative w-14 h-14 flex items-center justify-center">
               <div className={`absolute inset-0 border rounded-full group-hover:scale-110 group-hover:border-bali-gold transition-all duration-700 ${isScrolled ? 'border-bali-ink/10' : 'border-white/20'}`} />
               <div className={`absolute inset-2 border rounded-full group-hover:rotate-180 transition-all duration-1000 ${isScrolled ? 'border-bali-ink/5' : 'border-white/10'}`} />
@@ -107,13 +181,20 @@ export default function App() {
               <span className="font-serif text-2xl font-bold tracking-tighter leading-none">Bali Style</span>
               <span className="text-[9px] uppercase tracking-[0.4em] text-bali-gold font-bold leading-none mt-2">Premium Rattan</span>
             </div>
-          </div>
+          </motion.div>
           <nav className="hidden lg:flex items-center gap-16 text-[10px] font-bold uppercase tracking-[0.3em]">
             {['Каталог', 'О компании', 'HoReCa', 'Информация'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="relative group py-2">
+              <motion.a 
+                key={item} 
+                href={`#${item.toLowerCase()}`} 
+                className="relative group py-2"
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+                whileHover={{ y: -2 }}
+              >
                 <span className="block group-hover:text-bali-gold transition-colors duration-500">{item}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-bali-gold transition-all duration-500 group-hover:w-full" />
-              </a>
+              </motion.a>
             ))}
           </nav>
           <div className="flex items-center gap-8">
@@ -168,64 +249,65 @@ export default function App() {
       </AnimatePresence>
 
       <main className="flex-grow">
-        {/* Hero Section - Editorial Style */}
-        <section ref={heroRef} className="relative h-[110vh] flex flex-col justify-end overflow-hidden bg-bali-ink">
-          <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0 z-0">
-            <img 
-              src="https://picsum.photos/seed/bali-hero-premium/1920/1080" 
-              alt="Bali Rattan Furniture" 
-              className="w-full h-full object-cover brightness-[0.7] scale-110"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-bali-ink via-transparent to-black/40" />
-          </motion.div>
+        {/* Hero Section - Cinematic Reveal */}
+        <section ref={heroContainerRef} className="relative h-[200vh] bg-bali-ink">
+          <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+            <motion.div 
+              style={{ 
+                scale: maskScale,
+                borderRadius: maskRadius
+              }}
+              className="relative w-full h-full overflow-hidden"
+            >
+              <img 
+                src="https://picsum.photos/seed/bali-hero-premium/1920/1080" 
+                alt="Bali Rattan Furniture" 
+                className="w-full h-full object-cover brightness-[0.6]"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bali-ink/80" />
+            </motion.div>
 
-          <div className="container mx-auto px-6 relative z-10 pb-32">
-            <div className="grid grid-cols-12 gap-6 items-end">
-              <div className="col-span-12 lg:col-span-10">
-                <motion.div 
-                  initial={{ opacity: 0, y: 100 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <div className="flex items-center gap-4 mb-12">
-                    <div className="h-[1px] w-16 bg-bali-gold" />
-                    <span className="text-[10px] uppercase tracking-[0.5em] text-bali-gold font-bold">Эссенция Индонезии</span>
-                  </div>
-                  <h1 className="text-[18vw] lg:text-[14vw] font-serif leading-[0.75] text-white mb-16 tracking-tighter">
-                    Чистая<br />
-                    <span className="italic text-bali-gold ml-[0.5em]">Природа</span>
-                  </h1>
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8, duration: 1 }}
-                  className="flex flex-wrap gap-12 items-center"
-                >
-                  <Button size="lg" className="bg-bali-gold text-white hover:bg-white hover:text-bali-ink px-16 py-10 text-xs uppercase tracking-[0.3em] rounded-none transition-all duration-700 group">
-                    Смотреть коллекцию
-                    <ArrowRight className="ml-4 w-4 h-4 group-hover:translate-x-2 transition-transform" />
-                  </Button>
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-full border border-white/20 flex items-center justify-center group cursor-pointer hover:bg-white hover:border-white transition-all duration-500">
-                      <Play className="w-5 h-5 text-white group-hover:text-bali-ink fill-current ml-1" />
-                    </div>
-                    <span className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Смотреть фильм</span>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
+            <motion.div 
+              style={{ opacity: heroTextOpacity, y: heroTextY }}
+              className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-20"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="mb-8"
+              >
+                <span className="text-[10px] uppercase tracking-[0.8em] text-bali-gold font-bold">Bali Style Premium</span>
+              </motion.div>
+              <h1 className="text-[12vw] lg:text-[10vw] font-serif leading-[0.85] text-white tracking-tighter mb-12">
+                Эстетика<br />
+                <span className="italic text-bali-gold">Природы</span>
+              </h1>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 1.2 }}
+              >
+                <ArrowDown className="w-8 h-8 text-white/30 animate-bounce" />
+              </motion.div>
+            </motion.div>
           </div>
+        </section>
 
-          {/* Grid lines overlay */}
-          <div className="absolute inset-0 pointer-events-none z-20">
-            <div className="container mx-auto px-6 h-full flex justify-between">
-              <div className="grid-line-v opacity-20" />
-              <div className="grid-line-v opacity-20 hidden md:block" />
-              <div className="grid-line-v opacity-20 hidden lg:block" />
-              <div className="grid-line-v opacity-20" />
+        {/* Introduction Section */}
+        <section className="py-48 bg-bali-ink text-white relative z-10">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <motion.p 
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: false }}
+                variants={fluidVariants}
+                className="text-3xl md:text-5xl font-serif leading-relaxed text-bali-cream/90"
+              >
+                Мы создаем не просто мебель, а <span className="italic text-bali-gold">атмосферу</span> безмятежности Бали в вашем доме. Каждый предмет — это диалог между древним мастерством и современным комфортом.
+              </motion.p>
             </div>
           </div>
         </section>
@@ -246,14 +328,20 @@ export default function App() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-bali-ink/5 border border-bali-ink/5">
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false, amount: 0.2 }}
+              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-bali-ink/5 border border-bali-ink/5"
+            >
               {CATEGORIES.map((cat, idx) => (
                 <motion.div 
                   key={cat.id}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ delay: idx * 0.1, duration: 1 }}
-                  viewport={{ once: true }}
+                  variants={fluidVariants}
+                  whileHover={{ y: -10 }}
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
                   className="group relative aspect-[3/4] bg-bali-sand overflow-hidden cursor-pointer"
                 >
                   <div className="absolute inset-0 p-10 z-20 flex flex-col justify-between">
@@ -277,12 +365,12 @@ export default function App() {
                     transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
                     src={cat.image} 
                     alt={cat.name} 
-                    className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-1000"
+                    className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
                     referrerPolicy="no-referrer"
                   />
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -304,18 +392,24 @@ export default function App() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false, amount: 0.1 }}
+              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12"
+            >
               {FEATURED_PRODUCTS.map((product, idx) => (
                 <motion.div 
                   key={product.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 1 }}
-                  viewport={{ once: true }}
+                  variants={fluidVariants}
+                  whileHover={{ y: -15 }}
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
                   className="group"
                 >
                   <div className="relative aspect-[3/4] mb-10 overflow-hidden bg-bali-sand/5">
-                    <img 
+                    <motion.img 
                       src={product.image} 
                       alt={product.name} 
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-70 group-hover:opacity-100"
@@ -344,132 +438,136 @@ export default function App() {
                   </div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* About - Asymmetrical Layout */}
-        <section id="о компании" className="py-48 bg-bali-sand overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-1/3 h-full bg-bali-cream/50 -z-0" />
-          <div className="container mx-auto px-6 relative z-10">
-            <div className="grid grid-cols-12 gap-12 items-center">
-              <div className="col-span-12 lg:col-span-6 relative">
-                <div className="relative z-10">
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                    viewport={{ once: true }}
-                    className="aspect-[4/5] overflow-hidden shadow-2xl"
-                  >
-                    <img 
-                      src="https://picsum.photos/seed/bali-craft-premium/1000/1250" 
-                      alt="Artisan at work" 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </motion.div>
-                </div>
+        {/* About Section - Architectural Layout */}
+        <section id="о компании" className="py-48 bg-white text-bali-ink overflow-hidden">
+          <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-24 items-center">
+              <div className="lg:col-span-7 relative">
                 <motion.div 
-                  initial={{ opacity: 0, x: 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5, duration: 1 }}
-                  viewport={{ once: true }}
-                  className="absolute -bottom-16 -right-16 w-3/4 aspect-square bg-bali-ink p-16 hidden lg:flex flex-col justify-center border border-white/10 shadow-2xl"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: false }}
+                  transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative aspect-video overflow-hidden group"
                 >
-                  <span className="text-bali-gold text-7xl font-serif mb-6">100%</span>
-                  <p className="text-xs uppercase tracking-[0.4em] font-bold mb-4 text-white">Наследие ручной работы</p>
-                  <p className="text-sm text-white/60 leading-relaxed font-light">
-                    Каждое плетение рассказывает историю поколений. Наши мастера на Бали сохраняют наследие, насчитывающее столетия, гарантируя, что каждое изделие является уникальным шедевром.
-                  </p>
+                  <img 
+                    src="https://picsum.photos/seed/bali-about-arch/1200/800" 
+                    alt="Bali Craftsmanship" 
+                    className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-bali-gold/10 mix-blend-multiply" />
+                </motion.div>
+                <motion.div 
+                  initial={{ x: -100 }}
+                  whileInView={{ x: 0 }}
+                  viewport={{ once: false }}
+                  transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute -bottom-12 -right-12 bg-bali-gold p-12 text-white hidden md:block"
+                >
+                  <p className="text-6xl font-serif mb-2">15+</p>
+                  <p className="text-[10px] uppercase tracking-[0.3em] font-bold">Лет опыта</p>
                 </motion.div>
               </div>
-
-              <div className="col-span-12 lg:col-span-5 lg:col-start-8 mt-32 lg:mt-0">
+              <div className="lg:col-span-5">
                 <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1 }}
-                  viewport={{ once: true }}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: false }}
+                  variants={staggerContainer}
                 >
-                  <span className="text-bali-gold uppercase tracking-[0.5em] text-[10px] font-bold mb-6 block">Наша философия</span>
-                  <h2 className="text-7xl md:text-9xl font-serif leading-[0.8] mb-16 tracking-tighter">Душа<br /><span className="italic">Бали</span></h2>
-                  <div className="space-y-10 text-xl text-bali-ink/70 font-light leading-relaxed">
-                    <p>
-                      Bali Style — это больше, чем мебельный бренд. Это праздник индонезийского мастерства и природной красоты ротанга. Мы работаем напрямую с небольшими семейными мастерскими на Бали, чтобы предложить вам аутентичные, высококачественные изделия.
-                    </p>
-                    <p>
-                      Исключая посредников, мы обеспечиваем справедливую оплату труда наших мастеров и лучшую цену для наших клиентов в России.
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-16 mt-20 pt-16 border-t border-bali-ink/10">
-                    <div>
-                      <h4 className="text-4xl font-serif mb-4">Напрямую</h4>
-                      <p className="text-[10px] uppercase tracking-[0.3em] opacity-40 font-bold">Никаких посредников, только честная цена.</p>
-                    </div>
-                    <div>
-                      <h4 className="text-4xl font-serif mb-4">Этично</h4>
-                      <p className="text-[10px] uppercase tracking-[0.3em] opacity-40 font-bold">Поддержка местных сообществ на Бали.</p>
-                    </div>
-                  </div>
+                  <motion.span variants={fluidVariants} className="text-[10px] uppercase tracking-[0.5em] text-bali-gold font-bold mb-8 block">Наследие и Качество</motion.span>
+                  <motion.h2 variants={fluidVariants} className="text-6xl md:text-7xl font-serif mb-12 leading-tight">Искусство ручной работы</motion.h2>
+                  <motion.p variants={fluidVariants} className="text-lg opacity-70 leading-relaxed mb-12">
+                    Каждое изделие Bali Style — это результат сотен часов кропотливого труда индонезийских мастеров. Мы используем только отборный ротанг и экологичные материалы, чтобы ваша мебель служила поколениям.
+                  </motion.p>
+                  <motion.div variants={fluidVariants}>
+                    <Button variant="outline" className="border-bali-ink/20 hover:bg-bali-ink hover:text-white rounded-none px-12 py-8 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-700">
+                      Наша история
+                    </Button>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* HoReCa - Technical/Technical Style */}
-        <section id="horeca" className="py-48 bg-bali-cream border-y border-bali-ink/5 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-[0.03] select-none flex items-center justify-center">
-            <span className="text-[40vw] font-serif font-bold whitespace-nowrap">БИЗНЕС</span>
+        {/* HoReCa Section - Immersive Grid */}
+        <section id="horeca" className="py-48 bg-bali-ink text-white relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+            <div className="grid-line-h absolute top-1/4" />
+            <div className="grid-line-h absolute top-2/4" />
+            <div className="grid-line-h absolute top-3/4" />
+            <div className="grid-line-v absolute left-1/4" />
+            <div className="grid-line-v absolute left-2/4" />
+            <div className="grid-line-v absolute left-3/4" />
           </div>
+
           <div className="container mx-auto px-6 relative z-10">
-            <div className="grid grid-cols-12 gap-12">
-              <div className="col-span-12 lg:col-span-4">
-                <div className="sticky top-40">
-                  <Badge className="bg-bali-ink text-white rounded-none mb-8 px-6 py-2 text-[10px] font-bold uppercase tracking-[0.4em]">Корпоративные решения</Badge>
-                  <h2 className="text-7xl font-serif leading-none mb-12 tracking-tighter">HoReCa и<br />Дизайн</h2>
-                  <p className="text-xl text-bali-ink/60 mb-16 font-light leading-relaxed">
-                    Преображаем коммерческие пространства органическим теплом ротанга. Мы предоставляем комплексные решения для индустрии гостеприимства и профессионалов в области дизайна.
-                  </p>
-                  <Button className="w-full lg:w-auto bg-bali-gold text-white hover:bg-bali-ink px-16 py-10 text-[10px] font-bold uppercase tracking-[0.3em] rounded-none transition-all duration-700 shadow-xl">
-                    Стать партнером
-                  </Button>
-                </div>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-32 gap-12">
+              <div className="max-w-2xl">
+                <motion.span 
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: false }}
+                  className="text-[10px] uppercase tracking-[0.5em] text-bali-gold font-bold mb-8 block"
+                >
+                  Профессиональные решения
+                </motion.span>
+                <motion.h2 
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: false }}
+                  variants={fluidVariants}
+                  className="text-6xl md:text-8xl font-serif leading-none"
+                >
+                  HoReCa <span className="italic text-bali-gold">&</span> Projects
+                </motion.h2>
               </div>
-              
-              <div className="col-span-12 lg:col-span-7 lg:col-start-6 mt-24 lg:mt-0">
-                <div className="grid grid-cols-1 gap-px bg-bali-ink/10 border border-bali-ink/10 shadow-2xl">
-                  {[
-                    { title: 'Отели и курорты', desc: 'Кураторские наборы мебели для роскошных лобби, частных вилл и зон отдыха у бассейна.' },
-                    { title: 'Рестораны и кафе', desc: 'Высокопрочные изделия, разработанные для интенсивного коммерческого использования без ущерба для стиля.' },
-                    { title: 'Дизайнеры интерьеров', desc: 'Полный доступ к 3D-библиотекам, образцам материалов и персональному менеджеру проектов.' },
-                    { title: 'Индивидуальные проекты', desc: 'Мебель, изготовленная на заказ по вашим специфическим архитектурным эскизам.' }
-                  ].map((item, idx) => (
-                    <motion.div 
-                      key={idx} 
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      viewport={{ once: true }}
-                      className="bg-bali-cream p-16 group hover:bg-bali-ink hover:text-bali-sand transition-all duration-700 cursor-default"
-                    >
-                      <div className="flex justify-between items-start mb-10">
-                        <span className="text-[12px] font-bold opacity-30 group-hover:text-bali-gold transition-colors tracking-widest">0{idx + 1}</span>
-                        <div className="w-12 h-12 rounded-full border border-bali-ink/10 flex items-center justify-center group-hover:border-bali-gold transition-colors">
-                          <ArrowRight className="w-5 h-5 -rotate-45 group-hover:text-bali-gold transition-colors" />
-                        </div>
-                      </div>
-                      <h4 className="text-5xl font-serif mb-6 tracking-tight">{item.title}</h4>
-                      <p className="text-lg opacity-50 group-hover:opacity-80 transition-opacity leading-relaxed max-w-md font-light">
-                        {item.desc}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+              <motion.p 
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: false }}
+                className="text-lg opacity-50 max-w-sm text-right"
+              >
+                Создаем уникальные интерьеры для отелей, ресторанов и частных резиденций по всему миру.
+              </motion.p>
             </div>
+
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false }}
+              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-3 gap-12"
+            >
+              {[
+                { title: 'Рестораны', desc: 'Атмосферная мебель для залов и террас', icon: <Coffee className="w-8 h-8" /> },
+                { title: 'Отели', desc: 'Комплексное оснащение номеров и лобби', icon: <Hotel className="w-8 h-8" /> },
+                { title: 'Дизайн-бюро', desc: 'Индивидуальные проекты под ключ', icon: <Palmtree className="w-8 h-8" /> }
+              ].map((item, idx) => (
+                <motion.div 
+                  key={idx}
+                  variants={fluidVariants}
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
+                  className="group p-16 border border-white/5 hover:border-bali-gold/30 transition-all duration-700 relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-100 group-hover:text-bali-gold transition-all duration-700">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-4xl font-serif mb-6 group-hover:text-bali-gold transition-colors">{item.title}</h3>
+                  <p className="text-sm opacity-40 group-hover:opacity-70 transition-opacity leading-relaxed mb-12">{item.desc}</p>
+                  <div className="flex items-center gap-4 text-[10px] uppercase tracking-widest font-bold text-bali-gold opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-4 group-hover:translate-y-0">
+                    Подробнее <ArrowRight className="w-4 h-4" />
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
@@ -538,74 +636,84 @@ export default function App() {
         </section>
       </main>
 
-      {/* Footer - Architectural Style */}
-      <footer className="bg-bali-sand border-t border-bali-ink/10 pt-48 pb-12 overflow-hidden relative">
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-12 gap-16 mb-48">
-            <div className="col-span-12 lg:col-span-4">
-              <div className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 bg-bali-ink text-bali-sand flex items-center justify-center font-serif text-3xl font-bold">B</div>
-                <span className="font-serif text-4xl font-bold tracking-tighter">Bali Style</span>
-              </div>
-              <p className="text-xl text-bali-ink/60 font-light leading-relaxed max-w-sm">
-                Привносим вневременную элегантность индонезийского мастерства в ваш современный дом. Напрямую с Бали в Россию.
-              </p>
-            </div>
-
-            <div className="col-span-6 md:col-span-3 lg:col-span-2 lg:col-start-6">
-              <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] mb-10 opacity-30">Навигация</h4>
-              <ul className="space-y-6 text-sm font-bold uppercase tracking-widest">
-                {['Каталог', 'О компании', 'HoReCa', 'Информация'].map(item => (
-                  <li key={item}><a href={`#${item.toLowerCase()}`} className="hover:text-bali-gold transition-colors duration-500">{item}</a></li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="col-span-6 md:col-span-3 lg:col-span-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] mb-10 opacity-30">Поддержка</h4>
-              <ul className="space-y-6 text-sm font-bold uppercase tracking-widest">
-                {['Доставка', 'Оплата', 'Возврат', 'Приватность'].map(item => (
-                  <li key={item}><a href="#" className="hover:text-bali-gold transition-colors duration-500">{item}</a></li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="col-span-12 md:col-span-6 lg:col-span-3">
-              <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] mb-10 opacity-30">Рассылка</h4>
-              <p className="text-sm text-bali-ink/60 mb-8 font-light">Присоединяйтесь к нашему кругу для получения эксклюзивных обновлений и раннего доступа к новым коллекциям.</p>
-              <div className="relative">
-                <input 
-                  type="email" 
-                  placeholder="Ваш Email" 
-                  className="w-full bg-transparent border-b border-bali-ink/20 py-6 text-sm focus:outline-none focus:border-bali-gold transition-colors font-light"
-                />
-                <button className="absolute right-0 top-1/2 -translate-y-1/2 text-bali-gold hover:text-bali-ink transition-all duration-500 hover:translate-x-2">
-                  <ArrowRight className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12 pt-16 border-t border-bali-ink/5">
-            <p className="text-[10px] uppercase tracking-[0.5em] opacity-30 font-bold">© 2026 Bali Style • Мастерство ручной работы</p>
-            <div className="flex gap-16 text-[10px] uppercase tracking-[0.5em] opacity-30 font-bold">
-              <a href="#" className="hover:text-bali-gold transition-colors">Instagram</a>
-              <a href="#" className="hover:text-bali-gold transition-colors">Facebook</a>
-              <a href="#" className="hover:text-bali-gold transition-colors">Pinterest</a>
-            </div>
-          </div>
-        </div>
-        
-        {/* Massive background text with reveal effect */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none select-none overflow-hidden h-[40vh] flex items-end">
-          <motion.span 
-            initial={{ y: "100%" }}
-            whileInView={{ y: "20%" }}
+      {/* Footer - Grand Finale */}
+      <footer className="bg-bali-ink text-white pt-48 pb-12 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-5">
+          <motion.h2 
+            initial={{ y: 200, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: false }}
             transition={{ duration: 2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[35vw] font-serif font-bold text-bali-ink/[0.03] leading-none whitespace-nowrap tracking-tighter"
+            className="text-[35vw] font-serif leading-none tracking-tighter whitespace-nowrap"
           >
             BALI STYLE
-          </motion.span>
+          </motion.h2>
+        </div>
+
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-24 mb-32">
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-4 mb-12">
+                <div className="w-10 h-10 border border-bali-gold rounded-full flex items-center justify-center">
+                  <span className="font-serif text-xl font-bold">B</span>
+                </div>
+                <span className="font-serif text-2xl font-bold tracking-tighter">Bali Style</span>
+              </div>
+              <p className="text-sm opacity-40 leading-relaxed mb-12">
+                Мы верим, что дом — это святилище. Наша мебель помогает создать пространство, где время замедляется.
+              </p>
+              <div className="flex gap-6">
+                {['Instagram', 'Pinterest', 'Facebook'].map(social => (
+                  <a key={social} href="#" className="text-[10px] uppercase tracking-widest font-bold text-bali-gold hover:text-white transition-colors">
+                    {social}
+                  </a>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-[10px] uppercase tracking-[0.4em] text-bali-gold font-bold mb-12">Навигация</h4>
+              <ul className="flex flex-col gap-6">
+                {['Каталог', 'О компании', 'HoReCa', 'Информация', 'Контакты'].map(link => (
+                  <li key={link}>
+                    <a href="#" className="text-xl font-serif hover:text-bali-gold transition-colors">{link}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] uppercase tracking-[0.4em] text-bali-gold font-bold mb-12">Контакты</h4>
+              <ul className="flex flex-col gap-8">
+                <li>
+                  <p className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Телефон</p>
+                  <p className="text-2xl font-serif">8 (800) 123-45-67</p>
+                </li>
+                <li>
+                  <p className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Email</p>
+                  <p className="text-2xl font-serif">hello@bali-style.ru</p>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] uppercase tracking-[0.4em] text-bali-gold font-bold mb-12">Шоу-рум</h4>
+              <p className="text-2xl font-serif mb-4">Екатеринбург</p>
+              <p className="text-sm opacity-40 leading-relaxed">
+                ул. Дизайнеров, 15<br />
+                Пн-Пт: 10:00 — 20:00<br />
+                Сб-Вс: 11:00 — 18:00
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold opacity-30">
+            <p>© 2026 Bali Style. Все права защищены.</p>
+            <div className="flex gap-12">
+              <a href="#" className="hover:text-white transition-colors">Политика конфиденциальности</a>
+              <a href="#" className="hover:text-white transition-colors">Публичная оферта</a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
